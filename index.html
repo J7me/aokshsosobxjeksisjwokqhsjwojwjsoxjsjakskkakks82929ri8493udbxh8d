@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>QR Codes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f7;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a1a1a;
+            text-align: center;
+            margin-bottom: 40px;
+            letter-spacing: -0.5px;
+        }
+        
+        .store-btn {
+            width: 100%;
+            padding: 18px 24px;
+            margin-bottom: 12px;
+            border: none;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .store-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+        
+        .store-btn:active {
+            transform: translateY(0);
+        }
+        
+        .store-btn:disabled {
+            opacity: 0.6;
+            cursor: wait;
+            transform: none;
+        }
+        
+        /* Перекрёсток - оранжевый */
+        #btn-perekrestok {
+            background: #ff6b35;
+        }
+        
+        #btn-perekrestok:hover:not(:disabled) {
+            background: #ff8555;
+        }
+        
+        /* Дикси - фиолетовый */
+        #btn-dixy {
+            background: #764ba2;
+        }
+        
+        #btn-dixy:hover:not(:disabled) {
+            background: #8b5cb8;
+        }
+        
+        /* Магнит - красный */
+        #btn-magnit {
+            background: #e31e24;
+        }
+        
+        #btn-magnit:hover:not(:disabled) {
+            background: #f0282e;
+        }
+        
+        /* Модальное окно для Дикси и Магнита */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal.active {
+            display: flex;
+            opacity: 1;
+        }
+        
+        .modal-content {
+            position: relative;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.4);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            max-width: 90vw;
+            width: 400px;
+        }
+        
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+        
+        .modal-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            color: white;
+            font-size: 32px;
+            cursor: pointer;
+            line-height: 1;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+        
+        .modal-close:hover {
+            background: rgba(255,255,255,0.1);
+            color: #ff4444;
+        }
+        
+        .qr-container {
+            width: 100%;
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border-radius: 16px;
+            overflow: hidden;
+            padding: 20px;
+        }
+        
+        .qr-container img {
+            max-width: 100%;
+            max-height: 260px;
+            border-radius: 8px;
+        }
+        
+        .qr-container canvas {
+            border-radius: 8px;
+        }
+        
+        .qr-loading {
+            color: #666;
+            font-size: 15px;
+        }
+        
+        .qr-error {
+            color: #ff4444;
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+        }
+        
+        .qr-error a {
+            color: #e31e24;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .qr-error a:hover {
+            text-decoration: underline;
+        }
+        
+        .store-label {
+            text-align: center;
+            margin-top: 16px;
+            font-size: 15px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .card-number {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 14px;
+            color: #999;
+            font-family: monospace;
+        }
+        
+        .timer {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 13px;
+            color: #aaa;
+        }
+        
+        .auth-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 10px 20px;
+            background: #e31e24;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .auth-link:hover {
+            background: #c41a1f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>QR Коды</h1>
+        
+        <!-- Перекрёсток: управляется Tampermonkey скриптом -->
+        <button class="store-btn" id="btn-perekrestok" data-store="perekrestok">
+            🥕 Перекрёсток
+        </button>
+        
+        <!-- Дикси: нативный функционал -->
+        <button class="store-btn" id="btn-dixy" data-store="dixy">
+            🛒 Дикси
+        </button>
+        
+        <!-- Магнит: получает QR от magnit.php -->
+        <button class="store-btn" id="btn-magnit" data-store="magnit">
+            🧲 Магнит
+        </button>
+    </div>
+    
+    <!-- Модальное окно -->
+    <div class="modal" id="native-modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeNativeModal()">&times;</span>
+            <div class="qr-container" id="native-qr-display">
+                <div class="qr-loading">Загрузка...</div>
+            </div>
+            <div class="store-label" id="native-store-name"></div>
+            <div class="card-number" id="card-number"></div>
+            <div class="timer" id="timer"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script>
+        // Конфигурация магазинов
+        const STORES = {
+            dixy: {
+                name: 'Дикси',
+                baseUrl: 'https://dixy.ru/local/templates/dixy_ru/includes/qrlib/',
+                checkId: '2662004407742', // Замените на свой ID
+                color: '#764ba2'
+            },
+            magnit: {
+                name: 'Магнит',
+                apiUrl: 'http://e96525zm.beget.tech/l/magnit.php', // Путь к вашему PHP скрипту
+                color: '#e31e24'
+            }
+        };
+        
+        let currentStore = null;
+        let magnitTimer = null;
+        
+        // Открыть модальное окно
+        function openNativeModal(storeKey) {
+            currentStore = storeKey;
+            const store = STORES[storeKey];
+            const modal = document.getElementById('native-modal');
+            const display = document.getElementById('native-qr-display');
+            const label = document.getElementById('native-store-name');
+            const cardNum = document.getElementById('card-number');
+            const timer = document.getElementById('timer');
+            
+            label.textContent = store.name;
+            cardNum.textContent = '';
+            timer.textContent = '';
+            display.innerHTML = '<div class="qr-loading">Загрузка...</div>';
+            modal.classList.add('active');
+            
+            if (storeKey === 'dixy') {
+                loadDixyQR(display);
+            } else if (storeKey === 'magnit') {
+                loadMagnitQR(display, cardNum, timer);
+            }
+        }
+        
+        // Закрыть модальное окно
+        function closeNativeModal() {
+            document.getElementById('native-modal').classList.remove('active');
+            // Останавливаем таймер Магнита
+            if (magnitTimer) {
+                clearInterval(magnitTimer);
+                magnitTimer = null;
+            }
+            currentStore = null;
+        }
+        
+        // Закрытие по клику вне окна
+        document.getElementById('native-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'native-modal') closeNativeModal();
+        });
+        
+        // Закрытие по Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeNativeModal();
+        });
+        
+        // Дикси - генерация QR с таймстампом
+        async function loadDixyQR(container) {
+            const timestamp = Math.floor(Date.now() / 1000);
+            const store = STORES.dixy;
+            
+            const data = {
+                id: store.checkId,
+                t: timestamp,
+                h: "placeholder"
+            };
+            
+            const dataString = encodeURIComponent(JSON.stringify(data));
+            const qrUrl = `${store.baseUrl}?data=${dataString}&level=Q`;
+            
+            container.innerHTML = `
+                <div style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <img src="${qrUrl}" 
+                         style="max-width: 80%; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"
+                         onerror="this.parentElement.innerHTML='<div class=\'qr-error\'>Не удалось загрузить QR.<br>Возможно, требуется обновление хеша.</div>'">
+                    <p style="margin-top: 15px; font-size: 12px; color: #999; font-family: monospace;">
+                        ID: ${store.checkId}
+                    </p>
+                </div>
+            `;
+        }
+        
+        // Магнит - получаем QR от PHP скрипта
+        async function loadMagnitQR(container, cardNumEl, timerEl) {
+            const store = STORES.magnit;
+            
+            try {
+                const response = await fetch(`${store.apiUrl}?action=qr-json`);
+                
+                if (response.status === 401) {
+                    // Не авторизован - предлагаем войти
+                    container.innerHTML = `
+                        <div class="qr-error">
+                            Требуется авторизация<br>
+                            <a href="${store.apiUrl}" class="auth-link" target="_blank">Войти в Магнит</a>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.qr) {
+                    throw new Error('Нет данных QR');
+                }
+                
+                // Генерируем QR код из строки, полученной от PHP
+                container.innerHTML = '';
+                new QRCode(container, {
+                    text: data.qr,
+                    width: 260,
+                    height: 260,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+                
+                // Показываем номер карты
+                if (data.cardNumber) {
+                    cardNumEl.textContent = data.cardNumber;
+                }
+                
+                // Запускаем таймер обновления
+                let timeLeft = data.timeLeft || data.step || 30;
+                const step = data.step || 30;
+                
+                function updateTimer() {
+                    if (timeLeft <= 0) {
+                        timerEl.textContent = 'Обновление...';
+                        loadMagnitQR(container, cardNumEl, timerEl);
+                        return;
+                    }
+                    timerEl.textContent = `Обновление через ${timeLeft}с`;
+                    timeLeft--;
+                }
+                
+                updateTimer();
+                if (magnitTimer) clearInterval(magnitTimer);
+                magnitTimer = setInterval(updateTimer, 1000);
+                
+            } catch (err) {
+                container.innerHTML = `
+                    <div class="qr-error">
+                        Ошибка: ${err.message}<br>
+                        <a href="${store.apiUrl}" target="_blank" style="color: #e31e24; text-decoration: underline; font-size: 13px; display: inline-block; margin-top: 10px;">
+                            Открыть страницу Магнита
+                        </a>
+                    </div>
+                `;
+            }
+        }
+        
+        // Обработчики кнопок
+        document.getElementById('btn-dixy').addEventListener('click', () => {
+            openNativeModal('dixy');
+        });
+        
+        document.getElementById('btn-magnit').addEventListener('click', () => {
+            openNativeModal('magnit');
+        });
+        
+        // Кнопка Перекрёстка не имеет обработчика здесь — она управляется Tampermonkey
+    </script>
+</body>
+</html>
